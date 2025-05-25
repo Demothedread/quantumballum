@@ -1,5 +1,13 @@
 Summary
-	•	Craft a 3-mode interactive simulator (Wave, Particle, Pachinko) revealing quantum duality
+	•	Craft a 3-mode 	4.	Random Walk
+	•	For each "electron," perform M independent Bernoulli trials p=0.5.
+	•	Slot index = number of "rights" ⇒ P(k)=\binom{M}{k}/2^M.
+	5.	Pachinko Physics
+	•	Ball-Peg Collision: P(same_direction) = 0.5 + α × cos(θ) × previous_bias
+	•	Where θ = angle deviation from 90°, α ≈ 0.3, previous_bias ∈ {-1,0,1}
+	•	Relativistic momentum: p⃗ = γmv⃗, γ = 1/√(1-v²/c²)
+	•	Quantum uncertainty: Δx ∝ ℏ/Δp, applied as position noise
+	•	Energy conservation in elastic collisions with restitution factoreractive simulator (Wave, Particle, Pachinko) revealing quantum duality
 	•	Drive visuals from real equations (wavefunction, intensity, probability)—no “fake” interference
 	•	Structure code modularly (Scene, Physics, Renderer, UI), favoring brevity and clarity
 	•	Encourage a unified metaphor (carnival/casino games) if it simplifies UX
@@ -9,7 +17,7 @@ I. Scope & Goals
 	1.	Modes:
 	•	Wave – continuous wavefronts through 1–2 slits, compute \psi(\mathbf r)=\sum_j \frac{1}{r_j}e^{i(kr_j-\omega t)}; render intensity I=|\psi|^2 as heightmap.
 	•	Particle – sample the computed intensity map as a distribution; spawn discrete “electrons” on impact points.
-	•	Pachinko – model classical random walk: N rows of unbiased pegs ⇒ binomial slot distribution.
+	•	Pachinko – model quantum-relativistic collision dynamics: real-time ball-peg physics with angle-dependent probabilistic scattering, momentum conservation, and relativistic corrections. Direct peg hits (90°) have 50/50 probability of left/right deflection. Angular deviation from perpendicular correlates with directional bias based on previous collision history.
 	2.	Unifying Metaphor (optional):
 	•	Present all three modes as carnival games: “Wave Ring Toss,” “Quantum Plinko,” “Classic Pachinko.”
 	•	Shared UI shell: ticket counter = slits, play button starts round, scoreboard = interference hills.

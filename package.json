@@ -1,0 +1,39 @@
+{
+  "name": "quantum-ballet",
+  "version": "1.0.0",
+  "description": "a dazzling visualization of quantum mechanics and probabilistic randomization. Plus Pachinko! ",
+  "main": "index.html",
+  "scripts": {
+    "test": "npm run dev",
+    "dev": "lite-server",
+    "start": "lite-server",
+    "build": "npm run dev",
+    "deploy": "gh-pages -d ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Demothedread/quantumballum.git"
+  },
+  "dependencies": {
+    "three": "^0.152.0"
+  },
+  "devDependencies": {
+    "gh-pages": "^3.2.3",
+    "lite-server": "^2.6.1",
+    "npm-run-all": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "pachinko",
+    "educational",
+    "slit-experiment"
+  ],
+  "author": "Democles",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Demothedread/quantumballum/issues"
+  },
+  "homepage": "https://github.com/Demothedread/quantumballum#readme"
+}
