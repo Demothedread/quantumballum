@@ -11,6 +11,20 @@
 
     // Three.js scene and related objects
     sceneObjects: {},
+    
+    // Track initialization state
+    _initialized: false,
+    _loadStartTime: Date.now(),
+    
+    // Performance metrics for monitoring
+    performance: {
+      fps: 0,
+      frameTime: 0,
+      lastFrameTime: 0,
+      framesCount: 0,
+      fpsUpdateInterval: 500,
+      lastFpsUpdate: 0
+    },
 
     // Application state and parameters
     state: {
@@ -31,12 +45,20 @@
         showParticleGlow: true,
         animateCamera: false,
         carnivalTheme: false,
+        speed: 1.0,
+        running: false,
+        showTrajectories: true,
+        showStats: true,
+        showControls: true,
+        useShaders: true,
+        usePostProcessing: true,
         reset: () => QuantumSim.mode.switch(QuantumSim.state.params.mode)
       },
       pegGrid: [],
       activeBalls: [],
       tick: 0,
-      cumProb: []
+      cumProb: [],
+      isMobile: false
     },
 
     // Timer handles
@@ -51,15 +73,63 @@
      * Initialize the simulator
      */
     init() {
-      this.cacheDOM();
-      this.scene.init();
-      this.camera.init();
-      this.renderer.init();
-      this.controls.init();
-      this.ui.init();
-      this.mode.init();
-      this.theme.apply();
-      this.timers.render = requestAnimationFrame(this.update.bind(this));
+      try {
+        console.log("Initializing QuantumSim module...");
+        
+        // Prevent double initialization
+        if (this._initialized) {
+          console.warn("QuantumSim already initialized!");
+          return;
+        }
+        
+        // Detect mobile devices
+        this.state.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (this.state.isMobile) {
+          console.log("Mobile device detected, applying optimizations");
+          document.body.classList.add('mobile-device');
+        }
+        
+        // Initialize components
+        this.cacheDOM();
+        this.scene.init();
+        this.camera.init();
+        this.renderer.init();
+        this.controls.init();
+        this.ui.init();
+        this.mode.init();
+        this.theme.apply();
+        
+        // Start the render loop
+        this.timers.render = requestAnimationFrame(this.update.bind(this));
+        
+        // Mark as initialized
+        this._initialized = true;
+        
+        // Hide loading overlay
+        const loadingContainer = document.getElementById('loadingContainer');
+        if (loadingContainer) {
+          loadingContainer.style.display = 'none';
+        }
+        
+        console.log(`QuantumSim initialized in ${Date.now() - this._loadStartTime}ms`);
+      } catch (error) {
+        console.error("Failed to initialize QuantumSim:", error);
+        
+        // Show error in loading overlay
+        const loadingContainer = document.getElementById('loadingContainer');
+        if (loadingContainer) {
+          const loadingText = loadingContainer.querySelector('.loading-text');
+          if (loadingText) {
+            loadingText.textContent = 'Error initializing: ' + error.message;
+            loadingText.style.color = '#ff3366';
+          }
+        }
+        
+        // Try fallback renderer
+        if (typeof window.startFallbackRenderer === 'function') {
+          window.startFallbackRenderer();
+        }
+      }
     },
 
     /**

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Quantum Visual: Wave vs Particles Plus Pachinko!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive quantum physics simulator demonstrating wave-particle duality with three visualization modes: Wave, Particle, and Pachinko.">
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Using local Three.js from node_modules for better reliability -->
+  <script src="node_modules/three/build/three.min.js"></script>
+  <script src="node_modules/three/examples/js/controls/OrbitControls.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="node_modules/three/examples/js/shaders/CopyShader.js"></script>
+  <script src="node_modules/three/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="node_modules/dat.gui/build/dat.gui.min.js"></script>
+  <script src="params.js"></script>
+  <script src="debug.js"></script>
+  <!-- Load enhanced simulator implementation -->
+  <script src="quantumsim.js"></script>
+  <script src="main.js"></script>
+  <script>
+    // Make the loading overlay visible immediately
+    window.addEventListener('DOMContentLoaded', function() {
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer) {
+        loadingContainer.style.display = 'flex';
+      }
+    });
+    
+    // Global error handler to catch initialization errors
+    window.addEventListener('error', function(event) {
+      console.error('Application error:', event.error || event.message);
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer) {
+        const loadingText = loadingContainer.querySelector('.loading-text');
+        if (loadingText) {
+          loadingText.textContent = 'Error initializing: ' + (event.error?.message || event.message);
+          loadingText.style.color = '#ff3366';
+        }
+      }
+    });
+    
+    // Fallback to original implementation if QuantumSim fails
+    window.setTimeout(function() {
+      if (!window.QuantumSim || !window.QuantumSim._initialized) {
+        console.warn("QuantumSim not initialized, falling back to original implementation");
+        
+        // Load original script
+        const scriptElement = document.createElement('script');
+        scriptElement.src = 'script.js';
+        document.head.appendChild(scriptElement);
+        
+        // Load animation script
+        const animateScript = document.createElement('script');
+        animateScript.src = 'animate.js';
+        document.head.appendChild(animateScript);
+        
+        // Initialize original script after loading
+        scriptElement.onload = function() {
+          if (typeof window.init === 'function' && !window.initialized) {
+            setTimeout(function() {
+              console.log("Initializing original implementation");
+              window.init();
+            }, 500);
+          }
+        };
+      }
+    }, 5000); // Give QuantumSim 5 seconds to initialize before fallback
+  </script>
+</head>
+<body>
+  <div class="loading-overlay" id="loadingContainer">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+  <div class="quantum-container">
+    <div class="booth-frame">
+      <div class="corner-tl"></div>
+      <div class="corner-tr"></div>
+      <div class="corner-bl"></div>
+      <div class="corner-br"></div>
+    </div>
+    <div class="header">
+      <h1>Quantum Visual</h1>
+      <p class="subtitle">Wave vs Particles Plus Pachinko!</p>
+    </div>
+    <div class="canvas-container" id="canvasContainer"></div>
+    <div id="gui"></div>
+    <div class="mode-indicator">
+      <span class="mode-title">Current Mode:</span>
+      <span class="mode-value" id="modeValue">Wave</span>
+    </div>
+    <div class="camera-controls">
+      <div class="camera-controls-title">Camera Controls</div>
+      <div class="camera-buttons">
+        <button class="camera-preset-btn" id="resetCamera" data-preset="default">R</button>
+        <button class="camera-preset-btn" id="cam-wave" data-preset="wave">W</button>
+        <button class="camera-preset-btn" id="cam-particle" data-preset="particle">P</button>
+        <button class="camera-preset-btn" id="cam-artistic" data-preset="artistic">A</button>
+        <button class="camera-preset-btn" id="cam-topdown" data-preset="topdown">T</button>
+        <button class="camera-preset-btn" id="cam-follow" data-preset="follow">F</button>
+      </div> 
+    </div>
+    
+    <!-- Info Modal -->
+    <div class="info-modal" id="infoModal">
+      <div class="info-modal-header">
+        <h2>Quantum Visual Simulator</h2>
+        <button class="info-modal-close" id="closeInfoModal">×</button>
+      </div>
+      <div class="info-modal-content">
+        <h3>About This Simulation</h3>
+        <p>This interactive simulator demonstrates quantum physics principles through three different visualizations:</p>
+        
+        <h4>Wave Mode</h4>
+        <p>Visualizes the wave nature of quantum particles passing through single or double slits. The interference pattern demonstrates wave-like behavior.</p>
+        
+        <h4>Particle Mode</h4>
+        <p>Shows individual quantum particles passing through the slits. Over time, they build up the same interference pattern seen in wave mode, even though each particle travels a discrete path.</p>
+        
+        <h4>Pachinko Mode</h4>
+        <p>A mechanical analog using pachinko-style pegs to demonstrate how quantum probability distributions emerge from seemingly random individual events.</p>
+        
+        <h3>Controls</h3>
+        <ul>
+          <li><strong>Camera Presets:</strong> Use the buttons on the right to change camera views</li>
+          <li><strong>Drag:</strong> Click and drag to rotate the view</li>
+          <li><strong>Scroll:</strong> Zoom in and out</li>
+          <li><strong>Parameters:</strong> Adjust simulation parameters in the control panel</li>
+        </ul>
+        
+        <div class="info-footer">
+          <p>This simulation uses real quantum equations to demonstrate the wave-particle duality at the heart of quantum mechanics.</p>
+          <p><small>© 2025 Quantum Visual - Educational Physics Simulator</small></p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Expanded Debug Panel for Visual Diagnostics -->
+    <div id="debugPanel" class="debug-panel">
+      <div class="debug-panel-header">
+        <h3>Debug Panel</h3>
+        <button id="closeDebugPanel">×</button>
+      </div>
+      <div class="debug-panel-content">
+        <div class="debug-section" id="performanceMetrics">
+          <h4>Performance</h4>
+          <div class="debug-metric">
+            <span class="metric-label">FPS:</span>
+            <span class="metric-value" id="fpsValue">60</span>
+          </div>
+          <div class="debug-metric">
+            <span class="metric-label">Frame Time:</span>
+            <span class="metric-value" id="frameTimeValue">16.7ms</span>
+          </div>
+        </div>
+        
+        <div class="debug-section" id="renderingInfo">
+          <h4>Rendering</h4>
+          <div class="debug-metric">
+            <span class="metric-label">Draw Calls:</span>
+            <span class="metric-value" id="drawCallsValue">-</span>
+          </div>
+          <div class="debug-metric">
+            <span class="metric-label">Triangles:</span>
+            <span class="metric-value" id="trianglesValue">-</span>
+          </div>
+        </div>
+        
+        <div class="debug-section" id="simStats">
+          <h4>Simulation</h4>
+          <div class="debug-metric">
+            <span class="metric-label">Mode:</span>
+            <span class="metric-value" id="debugModeValue">-</span>
+          </div>
+          <div class="debug-metric">
+            <span class="metric-label">Objects:</span>
+            <span class="metric-value" id="objectsValue">-</span>
+          </div>
+        </div>
+        
+        <div class="debug-controls">
+          <button id="toggleWireframe">Toggle Wireframe</button>
+          <button id="takeScreenshot">Take Screenshot</button>
+        </div>
+        
+        <div class="debug-log" id="debugLog">
+          <h4>Log</h4>
+          <pre id="debugLogContent"></pre>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mobile Controls for Touch Devices -->
+    <div class="mobile-controls">
+      <button id="mobileMenuToggle" class="mobile-menu-toggle">≡</button>
+      <div class="mobile-menu">
+        <button class="mobile-mode-btn" data-mode="Wave">Wave</button>
+        <button class="mobile-mode-btn" data-mode="Particle">Particle</button>
+        <button class="mobile-mode-btn" data-mode="Pachinko">Pachinko</button>
+        <button class="mobile-action-btn" id="mobileInfo">ℹ️</button>
+        <button class="mobile-action-btn" id="mobileReset">↺</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="animate.js"></script>
+</body>
+</html>
