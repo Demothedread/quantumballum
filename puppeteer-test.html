@@ -1,0 +1,90 @@
+   
+   <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Quantum Visual: Wave vs Particles Plus Pachinko!</title>
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Use locally installed Three.js library for Puppeteer testing -->
+  <script src="node_modules/three/build/three.min.js"></script>
+  <!-- Include the params.js before the main scripts -->
+  <script src="params.js"></script>
+</head>
+<body onload="init()">
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+  <div class="quantum-container">
+    <div class="booth-frame">
+      <div class="corner-tl"></div>
+      <div class="corner-tr"></div>
+      <div class="corner-bl"></div>
+      <div class="corner-br"></div>
+    </div>
+    <div class="header">
+      <h1>Quantum Visual</h1>
+      <p class="subtitle">Wave vs Particles Plus Pachinko!</p>
+    </div>
+    <div class="canvas-container" id="canvasContainer"></div>
+    <div id="gui"></div>
+    <div class="mode-indicator">
+      <span class="mode-title">Current Mode:</span>
+      <span class="mode-value" id="modeValue">Wave</span>
+    </div>
+    <div class="camera-controls">
+      <div class="camera-controls-title">Camera Controls</div>
+      <div class="camera-buttons">
+        <button class="camera-preset-btn" id="resetCamera" data-preset="default">R</button>
+        <button class="camera-preset-btn" id="cam-wave" data-preset="wave">W</button>
+        <button class="camera-preset-btn" id="cam-particle" data-preset="particle">P</button>
+        <button class="camera-preset-btn" id="cam-artistic" data-preset="artistic">A</button>
+        <button class="camera-preset-btn" id="cam-topdown" data-preset="topdown">T</button>
+        <button class="camera-preset-btn" id="cam-follow" data-preset="follow">F</button>
+      </div> 
+    </div>
+    
+    <!-- Simple test message to confirm page loaded -->
+    <div id="test-status">Puppeteer Test Page</div>
+  </div>
+  
+  <!-- For testing, we include a simplified init script -->
+  <script>
+    function init() {
+      console.log("Init function called");
+      document.getElementById('loadingOverlay').style.display = 'none';
+      
+      try {
+        // Create a simple Three.js scene to verify it's working
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        
+        renderer.setSize(400, 300);
+        document.getElementById('canvasContainer').appendChild(renderer.domElement);
+        
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshBasicMaterial({color: 0x00ff00});
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        
+        camera.position.z = 5;
+        
+        function animate() {
+          requestAnimationFrame(animate);
+          cube.rotation.x += 0.01;
+          cube.rotation.y += 0.01;
+          renderer.render(scene, camera);
+        }
+        animate();
+        
+        document.getElementById('test-status').textContent = 'Three.js loaded and working!';
+      } catch (e) {
+        console.error("Three.js initialization error:", e);
+        document.getElementById('test-status').textContent = 'Error: ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>

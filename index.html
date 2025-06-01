@@ -6,16 +6,56 @@
   <title>Quantum Visual: Wave vs Particles Plus Pachinko!</title>
   <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/EffectComposer.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/RenderPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/ShaderPass.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/shaders/CopyShader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js"></script>
+  <!-- Using local Three.js from node_modules instead of CDN for better reliability -->
+  <script src="node_modules/three/build/three.min.js"></script>
+  <script src="node_modules/three/examples/js/controls/OrbitControls.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="node_modules/three/examples/js/shaders/CopyShader.js"></script>
+  <script src="node_modules/three/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="node_modules/dat.gui/build/dat.gui.min.js"></script>
   <script src="params.js"></script>
+  <script src="debug.js"></script>
+  <script>
+    // Make the loading overlay visible immediately
+    window.addEventListener('DOMContentLoaded', function() {
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer) {
+        loadingContainer.style.display = 'flex';
+      }
+    });
+    
+    // Global error handler to catch initialization errors
+    window.addEventListener('error', function(event) {
+      console.error('Application error:', event.error || event.message);
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer) {
+        const loadingText = loadingContainer.querySelector('.loading-text');
+        if (loadingText) {
+          loadingText.textContent = 'Error initializing: ' + (event.error?.message || event.message);
+          loadingText.style.color = '#ff3366';
+        }
+      }
+    });
+    
+    // Safety mechanism to ensure the animation loop starts
+    window.setTimeout(function() {
+      if (typeof window.animate === 'function' && !window._animationStarted) {
+        console.log("Animation didn't start automatically - starting it now");
+        window._animationStarted = true;
+        window.animate();
+      }
+      
+      // Hide loading screen after timeout if it's still visible
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer && loadingContainer.style.display !== 'none') {
+        console.warn("Loading screen still visible after timeout - hiding it now");
+        loadingContainer.style.display = 'none';
+      }
+    }, 3000);
+  </script>
 </head>
 <body onload="init()">
   <div class="loading-overlay" id="loadingOverlay">

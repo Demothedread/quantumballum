@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Quantum Visual: Wave vs Particles Plus Pachinko!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive quantum physics simulator demonstrating wave-particle duality with three visualization modes: Wave, Particle, and Pachinko.">
+  <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Using local Three.js from node_modules for better reliability -->
+  <script src="node_modules/three/build/three.min.js"></script>
+  <script src="node_modules/three/examples/js/controls/OrbitControls.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/EffectComposer.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/RenderPass.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/UnrealBloomPass.js"></script>
+  <script src="node_modules/three/examples/js/postprocessing/ShaderPass.js"></script>
+  <script src="node_modules/three/examples/js/shaders/CopyShader.js"></script>
+  <script src="node_modules/three/examples/js/shaders/LuminosityHighPassShader.js"></script>
+  <script src="node_modules/dat.gui/build/dat.gui.min.js"></script>
+  <script src="params.js"></script>
+  <script src="debug.js"></script>
+  <script>
+    // Make the loading overlay visible immediately
+    window.addEventListener('DOMContentLoaded', function() {
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer) {
+        loadingContainer.style.display = 'flex';
+      }
+      
+      // Check if THREE.js is loaded properly
+      if (typeof THREE === 'undefined') {
+        console.error("THREE.js is not loaded. Attempting to load from CDN...");
+        
+        // Create script elements to load THREE.js and its extensions from CDN as fallback
+        const dependencies = [
+          { src: "https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js" },
+          { src: "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.js", depends: "THREE" },
+          { src: "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/EffectComposer.js", depends: "THREE" },
+          { src: "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/RenderPass.js", depends: "THREE.EffectComposer" },
+          { src: "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/UnrealBloomPass.js", depends: "THREE.EffectComposer" },
+          { src: "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/postprocessing/ShaderPass.js", depends: "THREE.EffectComposer" },
+          { src: "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/shaders/CopyShader.js", depends: "THREE" },
+          { src: "https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/shaders/LuminosityHighPassShader.js", depends: "THREE" },
+          { src: "https://cdn.jsdelivr.net/npm/dat.gui@0.7.9/build/dat.gui.min.js" }
+        ];
+        
+        // Load dependencies in sequence
+        let loaded = 0;
+        function loadNextDependency(index) {
+          if (index >= dependencies.length) {
+            // All dependencies loaded
+            if (typeof init === 'function') {
+              console.log("All dependencies loaded from CDN, initializing application...");
+              init();
+            }
+            return;
+          }
+          
+          const dep = dependencies[index];
+          
+          // Check if dependency is already satisfied
+          if (dep.depends) {
+            let satisfied = true;
+            const parts = dep.depends.split('.');
+            let obj = window;
+            for (const part of parts) {
+              if (!obj || !obj[part]) {
+                satisfied = false;
+                break;
+              }
+              obj = obj[part];
+            }
+            
+            if (!satisfied) {
+              console.warn(`Dependency ${dep.depends} not satisfied, waiting...`);
+              setTimeout(() => loadNextDependency(index), 100);
+              return;
+            }
+          }
+          
+          // Load script
+          const script = document.createElement('script');
+          script.src = dep.src;
+          script.onload = () => {
+            loaded++;
+            console.log(`Loaded dependency ${index+1}/${dependencies.length}: ${dep.src}`);
+            loadNextDependency(index + 1);
+          };
+          script.onerror = (e) => {
+            console.error(`Failed to load dependency: ${dep.src}`, e);
+            loadNextDependency(index + 1); // Try to continue anyway
+          };
+          document.head.appendChild(script);
+        }
+        
+        // Start loading dependencies
+        loadNextDependency(0);
+      }
+    });
+    
+    // Global error handler to catch initialization errors
+    window.addEventListener('error', function(event) {
+      console.error('Application error:', event.error || event.message);
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer) {
+        const loadingText = loadingContainer.querySelector('.loading-text');
+        if (loadingText) {
+          loadingText.textContent = 'Error initializing: ' + (event.error?.message || event.message);
+          loadingText.style.color = '#ff3366';
+        }
+      }
+    });
+    
+    // Safety mechanism to ensure the animation loop starts
+    window.setTimeout(function() {
+      if (typeof window.animate === 'function' && !window._animationStarted) {
+        console.log("Animation didn't start automatically - starting it now");
+        window._animationStarted = true;
+        window.animate();
+      }
+      
+      // Hide loading screen after timeout if it's still visible
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer && loadingContainer.style.display !== 'none') {
+        console.warn("Loading screen still visible after timeout - hiding it now");
+        loadingContainer.style.display = 'none';
+        
+        // If animation still hasn't started, try the fallback renderer
+        if (typeof window.startFallbackRenderer === 'function') {
+          console.warn("Trying fallback renderer...");
+          window.startFallbackRenderer();
+        }
+      }
+    }, 5000);
+  </script>
+</head>
+<body onload="init()">
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Loading...</div>
+  </div>
+  <div class="quantum-container">
+    <div class="booth-frame">
+      <div class="corner-tl"></div>
+      <div class="corner-tr"></div>
+      <div class="corner-bl"></div>
+      <div class="corner-br"></div>
+    </div>
+    <div class="header">
+      <h1>Quantum Visual</h1>
+      <p class="subtitle">Wave vs Particles Plus Pachinko!</p>
+    </div>
+    <div class="canvas-container" id="canvasContainer"></div>
+    <div id="gui"></div>
+    <div class="mode-indicator">
+      <span class="mode-title">Current Mode:</span>
+      <span class="mode-value" id="modeValue">Wave</span>
+    </div>
+    <div class="camera-controls">
+      <div class="camera-controls-title">Camera Controls</div>
+      <div class="camera-buttons">
+        <button class="camera-preset-btn" id="resetCamera" data-preset="default">R</button>
+        <button class="camera-preset-btn" id="cam-wave" data-preset="wave">W</button>
+        <button class="camera-preset-btn" id="cam-particle" data-preset="particle">P</button>
+        <button class="camera-preset-btn" id="cam-artistic" data-preset="artistic">A</button>
+        <button class="camera-preset-btn" id="cam-topdown" data-preset="topdown">T</button>
+        <button class="camera-preset-btn" id="cam-follow" data-preset="follow">F</button>
+      </div> 
+    </div>
+    
+    <!-- Info Modal -->
+    <div class="info-modal" id="infoModal">
+      <div class="info-modal-header">
+        <h2>Quantum Visual Simulator</h2>
+        <button class="info-modal-close" id="closeInfoModal">×</button>
+      </div>
+      <div class="info-modal-content">
+        <h3>About This Simulation</h3>
+        <p>This interactive simulation demonstrates the wave-particle duality of quantum mechanics through three different visualization modes:</p>
+        
+        <h3>Wave Mode</h3>
+        <p>Visualizes quantum wave interference through a double-slit experiment. The waves originate from the source, pass through the slits, and create an interference pattern on the screen.</p>
+        
+        <h3>Particle Mode</h3>
+        <p>Shows individual quantum particles passing through the slits. The accumulated distribution pattern matches the intensity of the wave function.</p>
+        
+        <h3>Pachinko Mode</h3>
+        <p>A mechanical analog using pachinko-style pegs to demonstrate how quantum probability works in a more visual way.</p>
+        
+        <h3>Controls</h3>
+        <p>Use the control panel to adjust settings, change visualization modes, and explore different quantum effects.</p>
+      </div>
+    </div>
+    <div class="info-modal-bg" id="infoModalBg"></div>
+    
+    <!-- Loading Spinner -->
+    <div class="loading-container" id="loadingContainer">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Initializing Quantum Simulation...</div>
+    </div>
+    
+    <!-- Debug Information -->
+    <div id="debug-info" style="display: none; position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #00ff00; padding: 5px; border-radius: 3px; font-family: monospace; font-size: 12px; z-index: 9999;">
+      Press Ctrl+Shift+D for debug panel
+    </div>
+  </div>
+  <script src="script.js"></script>
+  <script src="animate.js"></script>
+  <script>
+    // Show debug info hint if URL has ?debug parameter
+    if (window.location.search.includes('debug')) {
+      document.getElementById('debug-info').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

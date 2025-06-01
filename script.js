@@ -1,37 +1,4 @@
-const QuantumApp = (() => {
-  // --- Window error handler for debug robustness ---
-  window.onerror = function(message, source, lineno, colno, error) {
-    console.error("Uncaught error:", message, "at", source, lineno + ":" + colno, error);
-  };
-
-  // --- DOM References, standardized here ---
-  const dom = {
-    gui: document.getElementById('gui'),
-    loadingContainer: document.getElementById('loadingContainer'),
-    loadingOverlay: document.getElementById('loadingOverlay'),
-    canvasContainer: document.getElementById('canvasContainer'),
-    infoModal: document.getElementById('infoModal'),
-    infoModalBg: document.getElementById('infoModalBg'),
-    closeInfoModal: document.getElementById('closeInfoModal'),
-    resetCamera: document.getElementById('resetCamera'),
-    camWave: document.getElementById('cam-wave'),
-    camParticle: document.getElementById('cam-particle'),
-    camArtistic: document.getElementById('cam-artistic'),
-    camTopdown: document.getElementById('cam-topdown'),
-    camFollow: document.getElementById('cam-follow')
-    // Add more as needed
-  };
-
-  // --- Utility: Null-check and warn for DOM elements ---
-  for (const key in dom) {
-    if (!dom[key]) {
-      console.warn(`DOM element missing: ${key}`);
-    }
-  }
-
-  // --- All state and variables here ---
-  let scene, camera, renderer, controls, gui;
-  // ... (other variables as before)/* ————————————— Globals & Params ————————————— */
+/* ————————————— Globals & Params ————————————— */
 let scene, camera, renderer, controls, gui;
 let barrierGroup, screenMesh, source, markerGroup;
 let waveTimer, particleTimer, rwTimer, tick=0;
@@ -221,8 +188,7 @@ const cameraPresets = {
         // Check if transition complete
         if (progress >= 1.0) {
           cameraTransition.active = false;
-
-
+          
           // If it's an orbiting camera, set up continuous orbit
           if (cameraTransition.orbit) {
             setupCinematicOrbit();
@@ -291,7 +257,7 @@ const cameraPresets = {
         }
       }
     }
-   
+    
     // Set up continuous cinematic orbit
     function setupCinematicOrbit() {
       // This is called after a cinematicOrbit transition completes
@@ -329,8 +295,9 @@ const cameraPresets = {
       // Update UI to reflect follow mode
       updateCameraControlsUI('follow');
     }
-
-     function cycleModePresets() {
+    
+    // Cycle through camera presets for the current mode
+    function cycleModePresets() {
       const mode = params.mode.toLowerCase();
       let presets = [];
       
@@ -468,7 +435,320 @@ const cameraPresets = {
       return 'default';
     }
     
+// ————————————— Setup and Initialize Scene —————————————
+function init() {
+  // Prevent double initialization
+  if (window.initialized) return;
+  window.initialized = true;
+  console.log("Initializing quantum simulation...");
+  
+  // Show loading screen
+  const loadingContainer = document.getElementById('loadingContainer');
+  if (loadingContainer) {
+    loadingContainer.style.display = 'flex';
+  }
+  
+  // Create scene with enhanced fog and environment
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x1a1a22, 0.02);
+  
+  // Camera with enhanced field of view
+  camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
+  camera.position.set(0, 2, 10);
+    
+    // High quality renderer with post-processing capabilities
+    renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      powerPreference: "high-performance"
+    });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.querySelector('.canvas-container').appendChild(renderer.domElement);
+    
+    // Set up post-processing for advanced visual effects
+    setupPostProcessing();
+    
+    // Enhanced lighting for neo-deco-rococo aesthetics
+    // Ambient light for base illumination
+    scene.add(new THREE.AmbientLight(0x334455, 0.5));
+    
+    // Main directional light with carnival colors
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    mainLight.position.set(5, 5, 10);
+    mainLight.castShadow = true;
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 25;
+    mainLight.shadow.mapSize.width = 2048;
+    mainLight.shadow.mapSize.height = 2048;
+    scene.add(mainLight);
+    
+    // Accent lights for neo-deco-rococo effect
+    const topLight = new THREE.PointLight(0x00ffcc, 0.4, 15);
+    topLight.position.set(0, 5, 2);
+    scene.add(topLight);
+    
+    const leftLight = new THREE.PointLight(0xff00aa, 0.4, 15);
+    leftLight.position.set(-5, 0, 2);
+    scene.add(leftLight);
+    
+    const rightLight = new THREE.PointLight(0xffcc00, 0.4, 15);
+    rightLight.position.set(5, 0, 2);
+    scene.add(rightLight);
+    
+    // Add volumetric light beams for slit visualization
+    addVolumetricLights();
+    
+    // Enhanced controls with damping for smoother interaction
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.7;
+    controls.maxDistance = 20;
+    
+    // Set up camera presets
+    setupCameraPresets();
+    
+    // Source with neo-deco-rococo styling
+    const srcGeom = new THREE.SphereGeometry(0.15, 32, 32); // Increased segments for smoother look
+    const srcMat = new THREE.MeshStandardMaterial({
+      color: params.carnivalTheme ? 0xff3366 : 0xff0000,
+      metalness: 0.7,
+      roughness: 0.2,
+      emissive: 0xff0000,
+      emissiveIntensity: 0.5
+    });
+    source = new THREE.Mesh(srcGeom, srcMat);
+    source.position.set(0, 0, -4);
+    source.castShadow = true;
+    
+    // Add decorative ring around source (Art Deco element)
+    const ringGeom = new THREE.TorusGeometry(0.25, 0.03, 16, 32);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.9,
+      roughness: 0.1,
+      emissive: 0xffaa00,
+      emissiveIntensity: 0.2
+    });
+    const sourceRing = new THREE.Mesh(ringGeom, ringMat);
+    sourceRing.rotation.x = Math.PI / 2;
+    source.add(sourceRing);
+    
+    // Add a glow effect (Neo element)
+    const glowGeom = new THREE.SphereGeometry(0.2, 16, 16);
+    const glowMat = new THREE.MeshBasicMaterial({
+      color: 0xff3366,
+      transparent: true,
+      opacity: 0.15
+    });
+    const sourceGlow = new THREE.Mesh(glowGeom, glowMat);
+    sourceGlow.scale.multiplyScalar(2.0);
+    source.add(sourceGlow);
+    
+    // Add particle emitter effect to source
+    addSourceParticleEffect(source);
+    
+    scene.add(source);
+    
+    // Add decorative elements to the scene (Rococo flourishes)
+    if (params.carnivalTheme) {
+      // Add decorative corner elements
+      addDecorativeElements();
+    }
 
+    // Barrier group with enhanced materials
+    barrierGroup = new THREE.Group();
+    scene.add(barrierGroup);
+    rebuildBarrier();
+
+    // Screen with enhanced materials
+    const geom = new THREE.PlaneBufferGeometry(width, height, seg, seg);
+    
+    // Neo-deco-rococo styled screen material with environment map
+    const mat = new THREE.MeshPhysicalMaterial({
+      color: params.carnivalTheme ? 0xaaccff : 0xddddff,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: 1,
+      metalness: 0.2,
+      roughness: 0.8,
+      reflectivity: 0.3,
+      clearcoat: 0.2,
+      clearcoatRoughness: 0.3
+    });
+    
+    screenMesh = new THREE.Mesh(geom, mat);
+    screenMesh.rotation.y = Math.PI;
+    screenMesh.position.set(0, 0, screenZ);
+    screenMesh.receiveShadow = true;
+    scene.add(screenMesh);
+    
+    // Add environment cubemap for reflections
+    new THREE.CubeTextureLoader()
+      .setPath('https://threejs.org/examples/textures/cube/pisa/')
+      .load(['px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'], function (cubeTexture) {
+        cubeTexture.encoding = THREE.sRGBEncoding;
+        scene.background = null;
+        scene.environment = cubeTexture;
+        if (screenMesh.material) {
+          screenMesh.material.envMap = cubeTexture;
+          screenMesh.material.envMapIntensity = 0.4;
+          screenMesh.material.needsUpdate = true;
+        }
+      });
+    
+    // Add decorative frame around screen (Art Deco element)
+    addScreenFrame(width, height, screenZ);
+
+    // Marker group for particles with enhanced visuals
+    markerGroup = new THREE.Group();
+    scene.add(markerGroup);
+
+    // GUI with neo-deco-rococo styling
+    gui = new dat.GUI({autoPlace:false});
+    document.getElementById('gui').appendChild(gui.domElement);
+    
+    // Create GUI folders for better organization
+    const setupFolder = gui.addFolder('Quantum Setup');
+    setupFolder.add(params,'slits', {One:1,Two:2}).name('Slits').onChange(rebuildBarrier);
+    setupFolder.add(params,'mode', ['Wave','Particle','Pachinko']).name('Mode').onChange(resetAll);
+    setupFolder.add(params,'electrons',100,10000).step(100).name('Electrons');
+    setupFolder.add(params,'roundDuration',5,60).step(5).name('Round Duration');
+    setupFolder.open();
+    
+    const pachinkoFolder = gui.addFolder('Pachinko Physics');
+    pachinkoFolder.add(params,'pegRows',8,20).step(1).name('Peg Rows');
+    pachinkoFolder.add(params,'binCount',5,20).step(1).name('Bins');
+    pachinkoFolder.add(params,'gravityStrength',0,20).step(0.1).name('Gravity');
+    pachinkoFolder.add(params,'quantumUncertainty',0,0.01).step(0.0001).name('Quantum σ');
+    pachinkoFolder.add(params,'relativistic').name('Relativistic Effects');
+    
+    const visualFolder = gui.addFolder('Visualization');
+    visualFolder.add(params,'showTrails').name('Show Trails').onChange(() => {
+      // Update trails with enhanced visual effects when enabled
+      if (params.showTrails && params.carnivalTheme) {
+        activeBalls.forEach(ball => {
+          if (ball.trailMesh) {
+            // Update trail material with neo-deco-rococo styling
+            ball.trailMesh.material.opacity = 0.7;
+            ball.trailMesh.material.color.setHex(ball.getColorFromProbability());
+          }
+        });
+      }
+    });
+    visualFolder.add(params,'colorByProbability').name('Color by Probability');
+    
+    // Add advanced visual controls
+    const effectsFolder = gui.addFolder('Visual Effects');
+    effectsFolder.add(params, 'enablePostFX').name('Post-Processing').onChange(togglePostProcessing);
+    effectsFolder.add(params, 'bloomIntensity', 0, 2).step(0.05).name('Bloom Strength').onChange(updatePostProcessing);
+    effectsFolder.add(params, 'showParticleGlow').name('Particle Glow');
+    effectsFolder.add(params, 'animateCamera').name('Cinematic Camera');
+    
+    // Add theme toggle with immediate visual update
+    visualFolder.add(params,'carnivalTheme').name('Neo-Deco Theme').onChange(() => {
+      // Update visuals when theme is toggled
+      rebuildBarrier();
+      
+      // Update source styling
+      if (source && source.material) {
+        source.material.color.setHex(params.carnivalTheme ? 0xff3366 : 0xff0000);
+        source.material.emissiveIntensity = params.carnivalTheme ? 0.5 : 0.2;
+      }
+      
+      // Update screen styling
+      if (screenMesh && screenMesh.material) {
+        screenMesh.material.color.setHex(params.carnivalTheme ? 0xaaccff : 0xddddff);
+        screenMesh.material.emissive.setHex(params.carnivalTheme ? 0x0033aa : 0x000000);
+        screenMesh.material.emissiveIntensity = params.carnivalTheme ? 0.2 : 0;
+      }
+      
+      // Update pegs
+      pegGrid.forEach(peg => {
+        if (peg.mesh && peg.mesh.material) {
+          peg.mesh.material.color.setHex(params.carnivalTheme ? 0x3388ff : 0x888888);
+          peg.mesh.material.emissive.setHex(params.carnivalTheme ? 0x001133 : 0x000000);
+          peg.mesh.material.emissiveIntensity = params.carnivalTheme ? 0.2 : 0;
+        }
+      });
+      
+      // Update active balls
+      activeBalls.forEach(ball => {
+        if (ball.mesh && ball.mesh.material) {
+          const baseColor = params.carnivalTheme ? 0x00ffaa : 0x00ff88;
+          ball.mesh.material.color.setHex(baseColor);
+          ball.mesh.material.emissive.setHex(params.carnivalTheme ? 0x002211 : 0x002200);
+        }
+      });
+    });
+    
+    // Control buttons with neo-deco-rococo styling
+    const controlsFolder = gui.addFolder('Controls');
+    controlsFolder.add({Start:startAll}, 'Start').name('▶ Start Simulation');
+    controlsFolder.add({Stop:stopAll}, 'Stop').name('⏹ Stop Simulation');
+    controlsFolder.add(params,'reset').name('↺ Reset Simulation');
+    
+    // Open key folders by default
+    controlsFolder.open();
+    visualFolder.open();
+    effectsFolder.open();
+    
+    // Style GUI with neo-deco-rococo CSS classes
+    setTimeout(() => {
+      // Apply custom styling to GUI elements
+      const guiElement = document.querySelector('.dg.main');
+      if (guiElement) {
+        guiElement.classList.add('neo-deco-gui');
+      }
+    }, 100);
+    
+    // Initialize event listeners for camera and UI controls
+    initEventListeners();
+    
+    // Try to add the GUI header with proper error handling
+    try {
+      const guiElement = document.querySelector('.dg.main');
+      if (guiElement) {
+        // Add neo-deco header
+        const header = document.createElement('div');
+        header.className = 'gui-header';
+        header.innerHTML = 'CONTROL PANEL';
+        guiElement.prepend(header);
+      }
+    } catch (e) {
+      console.warn("Error adding GUI header:", e);
+    }
+    
+    // Hide loading screen
+    setTimeout(() => {
+      const loadingContainer = document.getElementById('loadingContainer');
+      if (loadingContainer) {
+        loadingContainer.style.display = 'none';
+        console.log("Initialization complete, loading screen hidden.");
+      }
+      
+      // Set up main render loop with a delay to ensure everything is loaded
+      console.log("Starting animation loop");
+      animate();
+    }, 100);
+      }
+      
+      // Add pulsing effects to control buttons
+      const controlButtons = document.querySelectorAll('.dg .cr.function .property-name');
+      controlButtons.forEach(button => {
+        const pulseEffect = () => {
+          const intensity = 0.5 + 0.5 * Math.sin(Date.now() * 0.001 * 2);
+          button.style.textShadow = `0 0 ${intensity * 5}px rgba(0, 255, 204, ${intensity * 0.8})`;
+          requestAnimationFrame(pulseEffect);
+        };
+        pulseEffect();
+      });
+  
+  // ————————————— Advanced Visual Effects —————————————
+  
   // Setup post-processing effects
   function setupPostProcessing() {
     // Create composer for post-processing pipeline
@@ -757,8 +1037,59 @@ const cameraPresets = {
       controls.enabled = true;
     }
   }
+  
+// Initialize event listeners for camera controls
+function initEventListeners() {
+  try {
+    // Camera control buttons
+    const resetCameraBtn = document.getElementById('resetCamera');
+    if (resetCameraBtn) resetCameraBtn.addEventListener('click', () => moveCamera('default'));
+    
+    const camWaveBtn = document.getElementById('cam-wave');
+    if (camWaveBtn) camWaveBtn.addEventListener('click', () => moveCamera('wave'));
+    
+    const camParticleBtn = document.getElementById('cam-particle');
+    if (camParticleBtn) camParticleBtn.addEventListener('click', () => moveCamera('particle'));
+    
+    const camArtisticBtn = document.getElementById('cam-artistic');
+    if (camArtisticBtn) camArtisticBtn.addEventListener('click', () => moveCamera('artistic'));
+    
+    const camTopdownBtn = document.getElementById('cam-topdown');
+    if (camTopdownBtn) camTopdownBtn.addEventListener('click', () => moveCamera('topdown'));
+    
+    const camFollowBtn = document.getElementById('cam-follow');
+    if (camFollowBtn) camFollowBtn.addEventListener('click', () => toggleFollowMode());
+    
+    // Info button and modal
+    const closeInfoModalBtn = document.getElementById('closeInfoModal');
+    if (closeInfoModalBtn) closeInfoModalBtn.addEventListener('click', toggleInfoModal);
+    
+    const infoModalBg = document.getElementById('infoModalBg');
+    if (infoModalBg) infoModalBg.addEventListener('click', toggleInfoModal);
+    
+    console.log("Event listeners initialized successfully");
+  } catch (error) {
+    console.error("Error initializing event listeners:", error);
+  }
+}
+  
+  // Toggle info modal visibility
+  function toggleInfoModal() {
+    const modal = document.getElementById('info-modal');
+    const overlay = document.getElementById('modal-overlay');
+    
+    if (modal.classList.contains('visible')) {
+      // Hide modal
+      modal.classList.remove('visible');
+      overlay.classList.remove('visible');
+    } else {
+      // Show modal
+      modal.classList.add('visible');
+      overlay.classList.add('visible');
+    }
+  }
 
-   // ————————————— Build Barrier with Neo-Deco-Rococo Style —————————————
+  // ————————————— Build Barrier with Neo-Deco-Rococo Style —————————————
   function rebuildBarrier(){
     barrierGroup.clear();
     const barW = 0.2;
@@ -2089,337 +2420,59 @@ const cameraPresets = {
     };
   }
   
-// Initialize event listeners for camera controls
-  // ... etc. (all your functions, unchanged except for DOM usage)
-
-  // --- initEventListeners using safe references ---
-  function initEventListeners() {
-    if (dom.resetCamera) dom.resetCamera.addEventListener('click', () => moveCamera('default'));
-    if (dom.camWave) dom.camWave.addEventListener('click', () => moveCamera('wave'));
-    if (dom.camParticle) dom.camParticle.addEventListener('click', () => moveCamera('particle'));
-    if (dom.camArtistic) dom.camArtistic.addEventListener('click', () => moveCamera('artistic'));
-    if (dom.camTopdown) dom.camTopdown.addEventListener('click', () => moveCamera('topdown'));
-    if (dom.camFollow) dom.camFollow.addEventListener('click', () => toggleFollowMode());
-
-    // Info modal logic
-    if (dom.closeInfoModal) dom.closeInfoModal.addEventListener('click', toggleInfoModal);
-    if (dom.infoModalBg) dom.infoModalBg.addEventListener('click', toggleInfoModal);
-  }
-
-  // --- Modal logic, using standardized IDs ---
-  function toggleInfoModal() {
-    if (!dom.infoModal || !dom.infoModalBg) return;
-    dom.infoModal.classList.toggle('visible');
-    dom.infoModalBg.classList.toggle('visible');
-  }
-
-  // --- The public init() method ---
-  function init() {
-    // ... as before, but using dom.xxx for all element references.
-    // Initialization logic here
-    // After setup, remove loading spinner:
-    if (dom.loadingContainer) dom.loadingContainer.style.display = 'none';
-    // Continue with rest of init...
-        
-        // Prevent double initialization
-        if (window.initialized) return;
-        window.initialized = true;
-        
-        // Show loading screen
-        document.getElementById('loadingContainer').style.display = 'flex';
-        
-        // Create scene with enhanced fog and environment
-        scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x1a1a22, 0.02);
-        
-        // Camera with enhanced field of view
-        camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
-        camera.position.set(0, 2, 10);
-            
-            // High quality renderer with post-processing capabilities
-            renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            alpha: true,
-            powerPreference: "high-performance"
-            });
-            renderer.setSize(innerWidth, innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            document.querySelector('.canvas-container').appendChild(renderer.domElement);
-            
-            // Set up post-processing for advanced visual effects
-            setupPostProcessing();
-            
-            // Enhanced lighting for neo-deco-rococo aesthetics
-            // Ambient light for base illumination
-            scene.add(new THREE.AmbientLight(0x334455, 0.5));
-            
-            // Main directional light with carnival colors
-            const mainLight = new THREE.DirectionalLight(0xffffff, 0.7);
-            mainLight.position.set(5, 5, 10);
-            mainLight.castShadow = true;
-            mainLight.shadow.camera.near = 0.5;
-            mainLight.shadow.camera.far = 25;
-            mainLight.shadow.mapSize.width = 2048;
-            mainLight.shadow.mapSize.height = 2048;
-            scene.add(mainLight);
-            
-            // Accent lights for neo-deco-rococo effect
-            const topLight = new THREE.PointLight(0x00ffcc, 0.4, 15);
-            topLight.position.set(0, 5, 2);
-            scene.add(topLight);
-            
-            const leftLight = new THREE.PointLight(0xff00aa, 0.4, 15);
-            leftLight.position.set(-5, 0, 2);
-            scene.add(leftLight);
-            
-            const rightLight = new THREE.PointLight(0xffcc00, 0.4, 15);
-            rightLight.position.set(5, 0, 2);
-            scene.add(rightLight);
-            
-            // Add volumetric light beams for slit visualization
-            addVolumetricLights();
-            
-            // Enhanced controls with damping for smoother interaction
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            controls.rotateSpeed = 0.7;
-            controls.maxDistance = 20;
-            
-            // Set up camera presets
-            setupCameraPresets();
-            
-            // Source with neo-deco-rococo styling
-            const srcGeom = new THREE.SphereGeometry(0.15, 32, 32); // Increased segments for smoother look
-            const srcMat = new THREE.MeshStandardMaterial({
-            color: params.carnivalTheme ? 0xff3366 : 0xff0000,
-            metalness: 0.7,
-            roughness: 0.2,
-            emissive: 0xff0000,
-            emissiveIntensity: 0.5
-            });
-            source = new THREE.Mesh(srcGeom, srcMat);
-            source.position.set(0, 0, -4);
-            source.castShadow = true;
-            
-            // Add decorative ring around source (Art Deco element)
-            const ringGeom = new THREE.TorusGeometry(0.25, 0.03, 16, 32);
-            const ringMat = new THREE.MeshStandardMaterial({
-            color: 0xd4af37,
-            metalness: 0.9,
-            roughness: 0.1,
-            emissive: 0xffaa00,
-            emissiveIntensity: 0.2
-            });
-            const sourceRing = new THREE.Mesh(ringGeom, ringMat);
-            sourceRing.rotation.x = Math.PI / 2;
-            source.add(sourceRing);
-            
-            // Add a glow effect (Neo element)
-            const glowGeom = new THREE.SphereGeometry(0.2, 16, 16);
-            const glowMat = new THREE.MeshBasicMaterial({
-            color: 0xff3366,
-            transparent: true,
-            opacity: 0.15
-            });
-            const sourceGlow = new THREE.Mesh(glowGeom, glowMat);
-            sourceGlow.scale.multiplyScalar(2.0);
-            source.add(sourceGlow);
-            
-            // Add particle emitter effect to source
-            addSourceParticleEffect(source);
-            
-            scene.add(source);
-            
-            // Add decorative elements to the scene (Rococo flourishes)
-            if (params.carnivalTheme) {
-            // Add decorative corner elements
-            addDecorativeElements();
-            }
-
-            // Barrier group with enhanced materials
-            barrierGroup = new THREE.Group();
-            scene.add(barrierGroup);
-            rebuildBarrier();
-
-            // Screen with enhanced materials
-            const geom = new THREE.PlaneBufferGeometry(width, height, seg, seg);
-            
-            // Neo-deco-rococo styled screen material with environment map
-            const mat = new THREE.MeshPhysicalMaterial({
-            color: params.carnivalTheme ? 0xaaccff : 0xddddff,
-            side: THREE.DoubleSide,
-            polygonOffset: true,
-            polygonOffsetFactor: 1,
-            metalness: 0.2,
-            roughness: 0.8,
-            reflectivity: 0.3,
-            clearcoat: 0.2,
-            clearcoatRoughness: 0.3
-            });
-            
-            screenMesh = new THREE.Mesh(geom, mat);
-            screenMesh.rotation.y = Math.PI;
-            screenMesh.position.set(0, 0, screenZ);
-            screenMesh.receiveShadow = true;
-            scene.add(screenMesh);
-            
-            // Add environment cubemap for reflections
-            new THREE.CubeTextureLoader()
-            .setPath('https://threejs.org/examples/textures/cube/pisa/')
-            .load(['px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'], function (cubeTexture) {
-                cubeTexture.encoding = THREE.sRGBEncoding;
-                scene.background = null;
-                scene.environment = cubeTexture;
-                if (screenMesh.material) {
-                screenMesh.material.envMap = cubeTexture;
-                screenMesh.material.envMapIntensity = 0.4;
-                screenMesh.material.needsUpdate = true;
-                }
-            });
-            
-            // Add decorative frame around screen (Art Deco element)
-            addScreenFrame(width, height, screenZ);
-
-            // Marker group for particles with enhanced visuals
-            markerGroup = new THREE.Group();
-            scene.add(markerGroup);
-
-            // GUI with neo-deco-rococo styling
-            gui = new dat.GUI({autoPlace:false});
-            document.getElementById('gui').appendChild(gui.domElement);
-            
-            // Create GUI folders for better organization
-            const setupFolder = gui.addFolder('Quantum Setup');
-            setupFolder.add(params,'slits', {One:1,Two:2}).name('Slits').onChange(rebuildBarrier);
-            setupFolder.add(params,'mode', ['Wave','Particle','Pachinko']).name('Mode').onChange(resetAll);
-            setupFolder.add(params,'electrons',100,10000).step(100).name('Electrons');
-            setupFolder.add(params,'roundDuration',5,60).step(5).name('Round Duration');
-            setupFolder.open();
-            
-            const pachinkoFolder = gui.addFolder('Pachinko Physics');
-            pachinkoFolder.add(params,'pegRows',8,20).step(1).name('Peg Rows');
-            pachinkoFolder.add(params,'binCount',5,20).step(1).name('Bins');
-            pachinkoFolder.add(params,'gravityStrength',0,20).step(0.1).name('Gravity');
-            pachinkoFolder.add(params,'quantumUncertainty',0,0.01).step(0.0001).name('Quantum σ');
-            pachinkoFolder.add(params,'relativistic').name('Relativistic Effects');
-            
-            const visualFolder = gui.addFolder('Visualization');
-            visualFolder.add(params,'showTrails').name('Show Trails').onChange(() => {
-            // Update trails with enhanced visual effects when enabled
-            if (params.showTrails && params.carnivalTheme) {
-                activeBalls.forEach(ball => {
-                if (ball.trailMesh) {
-                    // Update trail material with neo-deco-rococo styling
-                    ball.trailMesh.material.opacity = 0.7;
-                    ball.trailMesh.material.color.setHex(ball.getColorFromProbability());
-                }
-                });
-            }
-            });
-            visualFolder.add(params,'colorByProbability').name('Color by Probability');
-            
-            // Add advanced visual controls
-            const effectsFolder = gui.addFolder('Visual Effects');
-            effectsFolder.add(params, 'enablePostFX').name('Post-Processing').onChange(togglePostProcessing);
-            effectsFolder.add(params, 'bloomIntensity', 0, 2).step(0.05).name('Bloom Strength').onChange(updatePostProcessing);
-            effectsFolder.add(params, 'showParticleGlow').name('Particle Glow');
-            effectsFolder.add(params, 'animateCamera').name('Cinematic Camera');
-            
-            // Add theme toggle with immediate visual update
-            visualFolder.add(params,'carnivalTheme').name('Neo-Deco Theme').onChange(() => {
-            // Update visuals when theme is toggled
-            rebuildBarrier();
-            
-            // Update source styling
-            if (source && source.material) {
-                source.material.color.setHex(params.carnivalTheme ? 0xff3366 : 0xff0000);
-                source.material.emissiveIntensity = params.carnivalTheme ? 0.5 : 0.2;
-            }
-            
-            // Update screen styling
-            if (screenMesh && screenMesh.material) {
-                screenMesh.material.color.setHex(params.carnivalTheme ? 0xaaccff : 0xddddff);
-                screenMesh.material.emissive.setHex(params.carnivalTheme ? 0x0033aa : 0x000000);
-                screenMesh.material.emissiveIntensity = params.carnivalTheme ? 0.2 : 0;
-            }
-            
-            // Update pegs
-            pegGrid.forEach(peg => {
-                if (peg.mesh && peg.mesh.material) {
-                peg.mesh.material.color.setHex(params.carnivalTheme ? 0x3388ff : 0x888888);
-                peg.mesh.material.emissive.setHex(params.carnivalTheme ? 0x001133 : 0x000000);
-                peg.mesh.material.emissiveIntensity = params.carnivalTheme ? 0.2 : 0;
-                }
-            });
-            
-            // Update active balls
-            activeBalls.forEach(ball => {
-                if (ball.mesh && ball.mesh.material) {
-                const baseColor = params.carnivalTheme ? 0x00ffaa : 0x00ff88;
-                ball.mesh.material.color.setHex(baseColor);
-                ball.mesh.material.emissive.setHex(params.carnivalTheme ? 0x002211 : 0x002200);
-                }
-            });
-            });
-            
-            // Control buttons with neo-deco-rococo styling
-            const controlsFolder = gui.addFolder('Controls');
-            controlsFolder.add({Start:startAll}, 'Start').name('▶ Start Simulation');
-            controlsFolder.add({Stop:stopAll}, 'Stop').name('⏹ Stop Simulation');
-            controlsFolder.add(params,'reset').name('↺ Reset Simulation');
-            
-            // Open key folders by default
-            controlsFolder.open();
-            visualFolder.open();
-            effectsFolder.open();
-            
-            // Style GUI with neo-deco-rococo CSS classes
-            setTimeout(() => {
-            // Apply custom styling to GUI elements
-            const guiElement = document.querySelector('.dg.main');
-            if (guiElement) {
-                guiElement.classList.add('neo-deco-gui');
-            }
-            }, 100);
-            
-    // Initialize event listeners for camera and UI controls
+  // Ensure proper initialization sequence
+  try {
+    // Initialize event listeners for camera controls and UI
     initEventListeners();
     
-    // Set up main render loop
-        // Start animation loop
+    // Set up initial camera position
+    moveCamera('default');
+    
+    // Start animation loop with a small delay to ensure all resources are ready
+    setTimeout(() => {
       if (typeof animate === 'function') {
+        console.log("Starting animation loop...");
         animate();
+      } else {
+        console.warn("Animation function not found. Attempting to load from animate.js");
+        // Try to create a function reference if it doesn't exist
+        if (typeof window.animate !== 'function') {
+          window.animate = function() {
+            requestAnimationFrame(animate);
+            if (renderer) renderer.render(scene, camera);
+          };
+          console.log("Created fallback animation function");
+          animate();
+        }
       }
       
       // Hide loading screen once everything is initialized
       const loadingContainer = document.getElementById('loadingContainer');
       if (loadingContainer) {
         loadingContainer.style.display = 'none';
+        console.log("Initialization complete, loading screen hidden.");
       }
-        
-        // Add neo-deco header
-        const header = document.createElement('div');
-        header.className = 'gui-header';
-        header.innerHTML = 'CONTROL PANEL';
-        guiElement.prepend(header);
+    }, 100);
+  } catch (error) {
+    console.error("Error during final initialization steps:", error);
+    // Try to hide loading screen even if there was an error
+    const loadingContainer = document.getElementById('loadingContainer');
+    if (loadingContainer) {
+      loadingContainer.style.display = 'none';
+      const loadingText = loadingContainer.querySelector('.loading-text');
+      if (loadingText) {
+        loadingText.textContent = 'Error initializing: ' + error.message;
+        loadingText.style.color = '#ff3366';
       }
-      
-      // Add pulsing effects to control buttons
-      const controlButtons = document.querySelectorAll('.dg .cr.function .property-name');
-      controlButtons.forEach(button => {
-        const pulseEffect = () => {
-          const intensity = 0.5 + 0.5 * Math.sin(Date.now() * 0.001 * 2);
-          button.style.textShadow = `0 0 ${intensity * 5}px rgba(0, 255, 204, ${intensity * 0.8})`;
-          requestAnimationFrame(pulseEffect);
-        };
-        pulseEffect();
-      });
+    }
   }
-  // --- Return only what needs to be public ---
-  return { init };
-})();
+}
 
-window.init = QuantumApp.init; // For HTML onload
+// Initialize when the window loads - only if not already initialized by body onload
+window.onload = function() {
+  // Check if init has already been called via body onload
+  if (!window.initialized) {
+    console.log("Window onload initializing application...");
+    init();
+  }
+};
