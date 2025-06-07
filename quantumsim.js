@@ -65,7 +65,8 @@
     timers: {
       wave: null,
       particle: null,
-      pachinko: null,
+      pachinkoSpawn: null,
+      pachinkoPhys: null,
       render: null
     },
 
@@ -160,7 +161,8 @@
       cancelAnimationFrame(this.timers.render);
       clearInterval(this.timers.wave);
       clearInterval(this.timers.particle);
-      clearInterval(this.timers.pachinko);
+      clearInterval(this.timers.pachinkoSpawn);
+      clearInterval(this.timers.pachinkoPhys);
     },
 
     /**
@@ -517,7 +519,8 @@
       stopAll() {
         clearInterval(QuantumSim.timers.wave);
         clearInterval(QuantumSim.timers.particle);
-        clearInterval(QuantumSim.timers.pachinko);
+        clearInterval(QuantumSim.timers.pachinkoSpawn);
+        clearInterval(QuantumSim.timers.pachinkoPhys);
       },
 
       update(time) {

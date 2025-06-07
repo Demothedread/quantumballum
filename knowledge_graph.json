@@ -1,0 +1,33 @@
+{
+  "entities": {
+    "QuantumSim": {
+      "features": [
+        "sceneObjects",
+        "state",
+        "timers",
+        "mode",
+        "camera",
+        "renderer",
+        "controls",
+        "ui",
+        "theme"
+      ],
+      "relationships": {
+        "mode": "handles Wave, Particle, and Pachinko modules",
+        "timers": "manage update loops and intervals"
+      },
+      "timers": ["pachinkoSpawn", "pachinkoPhys"]
+    },
+    "Mode": {
+      "features": ["wave", "particle", "pachinko"],
+      "relationships": {
+        "pachinko": "spawns balls and runs physics"
+      }
+    }
+  },
+  "observations": [
+    "Repo uses Three.js for rendering",
+    "Pachinko mode uses setInterval for spawn and physics updates",
+    "Timers updated to separate spawn and physics intervals"
+  ]
+}
