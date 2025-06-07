@@ -1,0 +1,19 @@
+{
+  "entities": [
+    {"id": "Scene", "features": ["Three.js scene", "Fog", "Lighting"]},
+    {"id": "Wave Mode", "features": ["wave interference", "GPU shaders"]},
+    {"id": "Particle Mode", "features": ["particle sampling", "discrete hits"]},
+    {"id": "Pachinko Mode", "features": ["peg grid", "random walk"]},
+    {"id": "Theme", "features": ["Carnival vs Default", "Neo-deco styling"]},
+    {"id": "UI", "features": ["dat.GUI", "camera controls"]},
+    {"id": "Environment", "features": ["Star field background", "Neon gradient"]}
+  ],
+  "relationships": [
+    {"from": "Scene", "to": "Wave Mode", "type": "renders"},
+    {"from": "Scene", "to": "Particle Mode", "type": "renders"},
+    {"from": "Scene", "to": "Pachinko Mode", "type": "renders"},
+    {"from": "Theme", "to": "Scene", "type": "styles"},
+    {"from": "UI", "to": "Scene", "type": "controls"}
+  ],
+  "observations": "Repo uses Three.js to visualize quantum duality through Wave, Particle and Pachinko modes. A new theme system toggles a neon carnival look or a starry default background."
+}

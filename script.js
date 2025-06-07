@@ -1,8 +1,44 @@
 /* ————————————— Globals & Params ————————————— */
 let scene, camera, renderer, controls, gui;
+let starTexture; // procedural star field for default theme
 let barrierGroup, screenMesh, source, markerGroup;
 let waveTimer, particleTimer, rwTimer, tick=0;
 let composer, bloomPass; // Post-processing components
+
+// Generate a simple star field texture
+function generateStarTexture() {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, size, size);
+  for (let i = 0; i < 800; i++) {
+    const x = Math.random() * size;
+    const y = Math.random() * size;
+    const r = Math.random() * 1.5;
+    ctx.fillStyle = `rgba(255,255,255,${Math.random()})`;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 4);
+  return tex;
+}
+
+// Apply background and body classes based on theme
+function applyThemeBackground() {
+  document.body.classList.toggle('carnival-theme', params.carnivalTheme);
+  document.body.classList.toggle('space-theme', !params.carnivalTheme);
+  if (params.carnivalTheme) {
+    scene.background = new THREE.Color(0x120012);
+  } else {
+    if (!starTexture) starTexture = generateStarTexture();
+    scene.background = starTexture;
+  }
+}
 
 /* ————————————— Enhanced Camera System ————————————— */
 
@@ -451,6 +487,7 @@ function init() {
   // Create scene with enhanced fog and environment
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x1a1a22, 0.02);
+  applyThemeBackground();
   
   // Camera with enhanced field of view
   camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 1000);
@@ -652,6 +689,8 @@ function init() {
     visualFolder.add(params,'carnivalTheme').name('Neo-Deco Theme').onChange(() => {
       // Update visuals when theme is toggled
       rebuildBarrier();
+
+      applyThemeBackground();
       
       // Update source styling
       if (source && source.material) {
