@@ -50,6 +50,14 @@ body {
   height: 100vh;
 }
 
+body.space-theme {
+  background: radial-gradient(circle at bottom, #000015 0%, #000010 70%, #000 100%);
+}
+
+body.carnival-theme {
+  background: radial-gradient(circle at center, #330033 0%, #000 80%);
+}
+
 /* Main container with carnival booth framing */
 .quantum-container {
   position: fixed;
