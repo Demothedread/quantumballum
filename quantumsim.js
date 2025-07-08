@@ -498,6 +498,25 @@
     },
 
     /**
+     * Lightweight physics engine for Pachinko mode
+     */
+    physics: {
+      init(options={}) {
+        PhysicsEngine.init({ gravity: options.gravity });
+      },
+      addPeg(mesh, radius) {
+        PhysicsEngine.addPeg(mesh, radius);
+      },
+      addBall(mesh, radius, velocity) {
+        return PhysicsEngine.addBall(mesh, radius, velocity);
+      },
+      step(dt, bounds) {
+        PhysicsEngine.step(dt, bounds);
+      },
+      get balls() { return PhysicsEngine.balls; }
+    },
+
+    /**
      * Mode manager: wave, particle, pachinko modules
      */
     mode: {
@@ -557,14 +576,14 @@
           const timers  = sim.timers;
       
           // --- 1) Clear previous pegs & balls ---
-          state.pegGrid.forEach(p => scene.remove(p.mesh));
-          state.activeBalls.forEach(b => {
+         state.pegGrid.forEach(p => scene.remove(p.mesh));
+         state.activeBalls.forEach(b => {
             if (b.mesh)        scene.remove(b.mesh);
             if (b.trailMesh)   scene.remove(b.trailMesh);
             clearInterval(b.dropTimer);
-          });
-          state.pegGrid.length = 0;
-          state.activeBalls.length = 0;
+         });
+         state.pegGrid.length = 0;
+         state.activeBalls.length = 0;
       
           // --- 2) Build new peg grid ---
           const rows     = params.pegRows;
@@ -588,17 +607,19 @@
                 })
               );
               peg.position.set(x0,y0,0);
-              peg.castShadow = true;
-              scene.add(peg);
-              state.pegGrid.push({ mesh: peg });
-            }
-          }
+             peg.castShadow = true;
+             scene.add(peg);
+             state.pegGrid.push({ mesh: peg });
+             QuantumSim.physics.addPeg(peg, 0.05);
+           }
+         }
       
           // --- 3) Spawn & update loop ---
           const total  = params.electrons;
           const roundT = params.roundDuration * 1000;
           const spawnInterval = roundT / total;
           const gravity = params.gravityStrength;
+          QuantumSim.physics.init({ gravity });
           const noiseAmt= params.quantumUncertainty;
       
           let spawned = 0;
@@ -624,53 +645,14 @@
               0
             ).multiplyScalar(2);
       
-            state.activeBalls.push({ mesh, vel });
-          }, spawnInterval);
-      
+            const ball = QuantumSim.physics.addBall(mesh, 0.03, vel);
+            state.activeBalls.push(ball);
+         }, spawnInterval);
+
           // Physics update (60fps)
           timers.pachinkoPhys = setInterval(() => {
             const dt = 0.016;
-            const vdown = new THREE.Vector3(0, -1, 0);
-            state.activeBalls.forEach((ball, idx) => {
-              const { mesh, vel } = ball;
-      
-              // apply gravity
-              vel.y += gravity * dt;
-      
-              // advance
-              mesh.position.addScaledVector(vel, dt);
-      
-              // collision vs pegs
-              state.pegGrid.forEach(p => {
-                const dist = mesh.position.distanceTo(p.mesh.position);
-                if (dist < 0.08) { // collision radius sum ≈ 0.05+0.03
-                  // compute collision normal
-                  const normal = mesh.position.clone()
-                    .sub(p.mesh.position).normalize();
-                  // angle to vertical
-                  const ang = normal.angleTo(vdown) * 180/Math.PI; 
-                  // probability of veering right
-                  const pRight = 0.5 + ((ang -90)/90)*0.5;
-                  const turnRight = Math.random() < pRight;
-      
-                  // reflect velocity's y component
-                  vel.y = -vel.y * 0.6; // restitution
-                  // assign x based on random outcome
-                  const speed = vel.length();
-                  const dir = turnRight ? 1 : -1;
-                  // tilt angle proportional to original impact angle
-                  const theta = THREE.MathUtils.degToRad(ang * 0.5);
-                  vel.x = Math.sin(theta) * speed * dir;
-                  vel.y = Math.cos(theta) * speed * -1;
-                }
-              });
-      
-              // remove if off bottom
-              if (mesh.position.y < -height/2 - 0.2) {
-                scene.remove(mesh);
-                state.activeBalls.splice(idx,1);
-              }
-            });
+            QuantumSim.physics.step(dt, { bottom: -height/2 - 0.2 });
           }, 16);
         },
       
