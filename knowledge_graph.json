@@ -23,11 +23,18 @@
       "relationships": {
         "pachinko": "spawns balls and runs physics"
       }
+    },
+    "PhysicsEngine": {
+      "features": ["balls", "pegs", "step"],
+      "relationships": {
+        "pachinko": "updates ball motion and collisions"
+      }
     }
   },
   "observations": [
     "Repo uses Three.js for rendering",
     "Pachinko mode uses setInterval for spawn and physics updates",
-    "Timers updated to separate spawn and physics intervals"
+    "Timers updated to separate spawn and physics intervals",
+    "Added PhysicsEngine module for pachinko collisions"
   ]
 }
