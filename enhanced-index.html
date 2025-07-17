@@ -21,6 +21,7 @@
   <script src="debug.js"></script>
   <!-- Load enhanced simulator implementation -->
   <script src="quantumsim.js"></script>
+  <script src="wheel-launcher.js"></script>
   <script src="main.js"></script>
   <script>
     // Make the loading overlay visible immediately
@@ -103,7 +104,13 @@
         <button class="camera-preset-btn" id="cam-artistic" data-preset="artistic">A</button>
         <button class="camera-preset-btn" id="cam-topdown" data-preset="topdown">T</button>
         <button class="camera-preset-btn" id="cam-follow" data-preset="follow">F</button>
-      </div> 
+      </div>
+      <div class="wheel-control">
+        <div class="wheel-track">
+          <div class="wheel-gear" id="wheelGear"></div>
+        </div>
+        <input type="range" id="nozzleRange" min="30" max="150" value="90">
+      </div>
     </div>
     
     <!-- Info Modal -->

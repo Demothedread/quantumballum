@@ -730,6 +730,36 @@ body.carnival-theme {
   box-shadow: 0 0 5px var(--color-neon-tertiary);
 }
 
+/* Wheel gear launcher */
+.wheel-control {
+  display:flex;
+  align-items:center;
+  margin-top:10px;
+  flex-direction:column;
+}
+.wheel-track {
+  width:20px;
+  height:100px;
+  border:1px solid var(--color-neon-primary);
+  border-radius:10px;
+  position:relative;
+  background:rgba(26,26,34,0.6);
+  margin-bottom:8px;
+}
+.wheel-gear {
+  width:18px;
+  height:18px;
+  background:var(--color-neon-primary);
+  border-radius:50%;
+  position:absolute;
+  bottom:0;
+  left:1px;
+  cursor:pointer;
+}
+.wheel-control input[type="range"] {
+  width:100px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .header h1 {
