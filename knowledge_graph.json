@@ -23,6 +23,12 @@
       "relationships": {
         "pachinko": "spawns balls and runs physics"
       }
+    },
+    "WheelGear": {
+      "features": ["launch force", "nozzle angle"],
+      "relationships": {
+        "QuantumSim": "triggers pachinko.launch"
+      }
     }
   },
   "observations": [

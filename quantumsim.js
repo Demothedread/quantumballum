@@ -35,6 +35,7 @@
         roundDuration: 30,
         pegRows: 12,
         binCount: 10,
+        nozzleAngle: 90,
         gravityStrength: 9.8,
         quantumUncertainty: 0.001,
         relativistic: false,
@@ -466,6 +467,7 @@
         f1.add(p,'mode',['Wave','Particle','Pachinko']).onChange(m=>QuantumSim.mode.switch(m));
         f1.add(p,'electrons',100,10000).step(100);
         f1.add(p,'roundDuration',5,60).step(5);
+        f1.add(p,'nozzleAngle',30,150).name('Nozzle Angle');
         f1.add(p,'reset').name('↺ Reset Simulation');
         f1.open();
         // Additional folders omitted for brevity
@@ -594,38 +596,12 @@
             }
           }
       
-          // --- 3) Spawn & update loop ---
-          const total  = params.electrons;
-          const roundT = params.roundDuration * 1000;
-          const spawnInterval = roundT / total;
-          const gravity = params.gravityStrength;
-          const noiseAmt= params.quantumUncertainty;
-      
-          let spawned = 0;
-          // Drop timer
-          timers.pachinkoSpawn = setInterval(() => {
-            if (spawned++ >= total) {
-              clearInterval(timers.pachinkoSpawn);
-              return;
-            }
-            // create ball
-            const mesh = new THREE.Mesh(
-              new THREE.SphereGeometry(0.03,12,12),
-              new THREE.MeshStandardMaterial({ color: 0xffaa00 })
-            );
-            // start at top center
-            mesh.position.set(0, height/2 + 0.1, 0);
-            scene.add(mesh);
-      
-            // initial downward velocity
-            const vel = new THREE.Vector3(
-              (Math.random()-0.5)*noiseAmt,
-              -1,
-              0
-            ).multiplyScalar(2);
-      
-            state.activeBalls.push({ mesh, vel });
-          }, spawnInterval);
+          // --- 3) Store board state ---
+          state.boardHeight   = height;
+          state.pachinkoGravity = params.gravityStrength;
+          state.pachinkoNoise   = params.quantumUncertainty;
+
+          // No automatic spawn timer; balls are launched via WheelGear
       
           // Physics update (60fps)
           timers.pachinkoPhys = setInterval(() => {
@@ -673,7 +649,39 @@
             });
           }, 16);
         },
-      
+
+        /** Launch balls using current nozzle and force */
+        launch(force=0.5) {
+          const scene  = QuantumSim.sceneObjects.scene;
+          const state  = QuantumSim.state;
+          const params = state.params;
+          const height = state.boardHeight || params.pegRows * 0.4;
+          const angle  = THREE.MathUtils.degToRad(params.nozzleAngle);
+          const count  = Math.max(1, Math.round(force * 5));
+          const speed  = 2 + force * 3;
+          const noise  = state.pachinkoNoise * force;
+
+          for (let i=0;i<count;i++) {
+            const mesh = new THREE.Mesh(
+              new THREE.SphereGeometry(0.03,12,12),
+              new THREE.MeshStandardMaterial({ color: 0xffaa00 })
+            );
+            mesh.position.set(0, height/2 + 0.1, 0);
+            scene.add(mesh);
+
+            const dir = new THREE.Vector3(
+              Math.sin(angle),
+              -Math.cos(angle),
+              0
+            );
+            dir.x += (Math.random()-0.5)*noise;
+            dir.y += (Math.random()-0.5)*noise;
+            dir.normalize();
+            const vel = dir.multiplyScalar(speed);
+            state.activeBalls.push({mesh,vel});
+          }
+        },
+
         /** Stop Pachinko entirely */
         stop() {
           clearInterval(QuantumSim.timers.pachinkoSpawn);
